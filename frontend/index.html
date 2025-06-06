@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Painel de Produtividade</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+    <div class="cloud"></div>
+
+    <div class="rain"></div>
+
+    <header>
+        <h1>Painel de Produtividade</h1>
+    </header>
+
+    <main class="dashboard">
+
+        <section class="widget search-bar" id="search-widget">
+            <input type="text" id="searchInput" placeholder="Pesquisar no Google ou digitar URL" />
+        </section>
+
+        <!-- Relógio -->
+        <section class="widget" id="clock-widget">
+            <h2>Relógio</h2>
+            <div id="clock">00:00</div>
+            <div class="date">Segunda-feira, 5 de Junho</div>
+        </section>
+
+        <!-- Tempo -->
+        <section class="widget" id="weather-widget">
+            <div class="weather-info">
+                <div class="city">Detectando localização...</div>
+                <img id="weatherIcon" src="" alt="Ícone do tempo" />
+                <div class="temp">--</div>
+                <div class="desc">Predom. ensolarado</div>
+                <div class="minmax">Mín: -- / Máx: --</div>
+            </div>
+        </section>
+
+        <!-- Lista de Tarefas -->
+        <section class="widget" id="todo-widget">
+            <h2>Lista de Tarefas</h2>
+
+            <div id="current-task">
+                <strong>Próxima tarefa:</strong> <span id="nextTask">Nenhuma</span>
+                <div id="taskPreview" class="task-preview-container"></div>
+            </div>
+
+            <button id="toggleTodo" aria-label="Alternar lista de tarefas">＋</button>
+
+            <div id="todoDetails" style="display: none;">
+                <div class="todo-section">
+                    <h3>Manhã ☀️</h3>
+                    <ul id="todoMorning"></ul>
+                    <button onclick="clearAll('morning')">Limpar Manhã</button>
+                </div>
+
+                <div class="todo-section">
+                    <h3>Tarde 🌤️</h3>
+                    <ul id="todoAfternoon"></ul>
+                    <button onclick="clearAll('afternoon')">Limpar Tarde</button>
+                </div>
+
+                <div class="todo-section">
+                    <h3>Noite 🌙</h3>
+                    <ul id="todoNight"></ul>
+                    <button onclick="clearAll('night')">Limpar Noite</button>
+                </div>
+
+                <input type="text" id="todoInput" placeholder="Nova tarefa" />
+                <input type="time" id="todoTime" />
+                <select id="todoPeriod">
+                    <option value="morning">Manhã</option>
+                    <option value="afternoon">Tarde</option>
+                    <option value="night">Noite</option>
+                </select>
+
+                <button id="addTodo">Adicionar tarefa</button>
+            </div>
+        </section>
+
+        <!-- Links Rápidos -->
+        <section class="widget" id="quick-links-widget">
+            <h2>Links Rápidos</h2>
+            <div class="icon-grid">
+                <a href="https://google.com" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Google">G</a>
+                <a href="https://gmail.com" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Gmail">M</a>
+                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" class="icon-btn" title="YouTube">Y</a>
+                <a href="https://drive.google.com" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Google Drive">D</a>
+                <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" title="Instagram">I</a>
+                <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" title="LinkedIn">In</a>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
