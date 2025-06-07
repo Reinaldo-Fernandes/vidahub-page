@@ -1,18 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // --- Funções utilitárias ---
+  const clockElement = document.getElementById('clock');
+  const dateElement = document.querySelector('.date');
+  const cityEl = document.querySelector('.city');
+  const weatherIcon = document.getElementById('weatherIcon');
+  const tempEl = document.querySelector('.temp');
+  const descEl = document.querySelector('.desc');
+  const minmaxEl = document.querySelector('.minmax');
+
+  const todoInput = document.getElementById('todoInput');
+  const todoTime = document.getElementById('todoTime');
+  const todoPeriod = document.getElementById('todoPeriod');
+  const addTodoBtn = document.getElementById('addTodo');
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  const previewContainer = document.getElementById('taskPreview');
+
   function capitalize(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
-  function timeDifference(time1, time2) {
-    const [h1, m1] = time1.split(':').map(Number);
-    const [h2, m2] = time2.split(':').map(Number);
+  function timeDifference(t1, t2) {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
     return Math.abs(h1 * 60 + m1 - (h2 * 60 + m2));
   }
-
-  // --- Relógio e Data ---
-  const clockElement = document.getElementById('clock');
-  const dateElement = document.querySelector('.date');
 
   function updateClock() {
     const now = new Date();
@@ -21,56 +32,46 @@ document.addEventListener('DOMContentLoaded', () => {
       weekday: 'long', day: 'numeric', month: 'long'
     }));
   }
+
   setInterval(updateClock, 1000);
   updateClock();
 
-  // --- Clima ---
-  const cityEl = document.querySelector('.city');
-  const weatherIcon = document.getElementById('weatherIcon');
-  const tempEl = document.querySelector('.temp');
-  const descEl = document.querySelector('.desc');
-  const minmaxEl = document.querySelector('.minmax');
-
-  async function fetchWeatherByCoords(lat, lon) {
+  function fetchWeatherByCoords(lat, lon) {
     const apiKey = '6b2e9835bf99ae05ed4e3fe8b2fdf128';
     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
 
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.cod !== 200) throw new Error(data.message);
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.cod !== 200) throw new Error(data.message);
+        const { icon, description, id } = data.weather[0];
+        const isNight = icon.endsWith('n');
 
-      const { icon, description, id } = data.weather[0];
-      const isNight = icon.endsWith('n');
+        weatherIcon.src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
+        weatherIcon.alt = description;
+        tempEl.textContent = `${Math.round(data.main.temp)}°C`;
+        descEl.textContent = description;
+        minmaxEl.textContent = `Mín: ${Math.round(data.main.temp_min)} / Máx: ${Math.round(data.main.temp_max)}`;
+        cityEl.textContent = data.name;
 
-      weatherIcon.src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-      weatherIcon.alt = description;
-      tempEl.textContent = `${Math.round(data.main.temp)}°C`;
-      descEl.textContent = description;
-      minmaxEl.textContent = `Mín: ${Math.round(data.main.temp_min)} / Máx: ${Math.round(data.main.temp_max)}`;
-      cityEl.textContent = data.name;
+        updateWeatherBackground(id, isNight);
 
-      updateWeatherBackground(id, isNight);
-
-      if (id >= 200 && id < 600) {
-        createRain();
-      } else {
-        document.querySelector('.rain')?.replaceChildren();
-      }
-    } catch (err) {
-      console.error(err);
-      tempEl.textContent = '--';
-      descEl.textContent = 'Erro ao carregar';
-      minmaxEl.textContent = '';
-      weatherIcon.src = '';
-      cityEl.textContent = 'Localização indisponível';
-    }
+        if (id >= 200 && id < 600) createRain();
+        else document.querySelector('.rain')?.replaceChildren();
+      })
+      .catch(err => {
+        console.error(err);
+        tempEl.textContent = '--';
+        descEl.textContent = 'Erro ao carregar';
+        minmaxEl.textContent = '';
+        weatherIcon.src = '';
+        cityEl.textContent = 'Localização indisponível';
+      });
   }
 
   function updateWeatherBackground(id, isNight) {
     const body = document.body;
     body.className = '';
-
     if (isNight) body.classList.add('weather-night');
     else if (id >= 200 && id < 300) body.classList.add('weather-thunderstorm');
     else if (id >= 300 && id < 600) body.classList.add('weather-rain');
@@ -97,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const rainContainer = document.querySelector('.rain');
     if (!rainContainer) return;
     rainContainer.innerHTML = '';
-
     for (let i = 0; i < 100; i++) {
       const drop = document.createElement('div');
       drop.className = 'rain-drop';
@@ -108,19 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- ToDo ---
-  const todoInput = document.getElementById('todoInput');
-  const todoTime = document.getElementById('todoTime');
-  const todoPeriod = document.getElementById('todoPeriod');
-  const addTodoBtn = document.getElementById('addTodo');
-  const toggleBtn = document.getElementById('toggleTodo');
-  const todoDetails = document.getElementById('todoDetails');
-  const nextTaskEl = document.getElementById('nextTask');
-
   function createTaskElement(text, time = '') {
     const li = document.createElement('li');
     const span = document.createElement('span');
-
     span.textContent = text;
     if (time) span.dataset.time = time;
     li.appendChild(span);
@@ -130,10 +120,11 @@ document.addEventListener('DOMContentLoaded', () => {
     deleteBtn.onclick = () => {
       li.remove();
       saveTasks();
+      updateTaskPreview();
     };
     li.appendChild(deleteBtn);
 
-    li.addEventListener('click', e => {
+    li.addEventListener('click', (e) => {
       if (e.target !== deleteBtn) {
         li.classList.toggle('done');
         saveTasks();
@@ -170,8 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         list.appendChild(li);
       });
     });
+    updateTaskPreview();
   }
-  loadTasks();
 
   addTodoBtn.addEventListener('click', () => {
     const task = todoInput.value.trim();
@@ -185,19 +176,29 @@ document.addEventListener('DOMContentLoaded', () => {
       todoInput.value = '';
       todoTime.value = '';
       saveTasks();
-      createTaskPreview(task, time);
+      updateTaskPreview();
     }
   });
 
-  function createTaskPreview(text, time) {
-    const previewContainer = document.getElementById('taskPreview');
-    if (!previewContainer) return;
+  function updateTaskPreview() {
     previewContainer.innerHTML = '';
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        const task = span.textContent;
+        const time = span.dataset.time;
+        const div = document.createElement('div');
+        div.className = 'task-preview';
+        div.textContent = task + (time ? ` (${time})` : '');
 
-    const previewTask = document.createElement('div');
-    previewTask.className = 'task-preview';
-    previewTask.textContent = text + (time ? ` (${time})` : '');
-    previewContainer.appendChild(previewTask);
+        if (time && timeDifference(new Date().toTimeString().slice(0, 5), time) <= 15) {
+          div.classList.add('alert-task');
+        }
+
+        previewContainer.appendChild(div);
+      });
+    });
   }
 
   toggleBtn.addEventListener('click', () => {
@@ -206,34 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.textContent = isHidden ? '－' : '＋';
   });
 
-  function updateNextTask() {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const period = currentHour < 12 ? 'morning' : currentHour < 18 ? 'afternoon' : 'night';
-
-    const list = document.getElementById(`todo${capitalize(period)}`);
-    const firstTask = list.querySelector('li');
-
-    nextTaskEl.textContent = 'Nenhuma';
-    nextTaskEl.classList.remove('alert-task');
-
-    if (firstTask) {
-      const span = firstTask.querySelector('span');
-      const taskText = span.textContent;
-      const taskTime = span.dataset.time;
-
-      nextTaskEl.textContent = taskText + (taskTime ? ` (${taskTime})` : '');
-
-      if (taskTime && timeDifference(now.toTimeString().slice(0, 5), taskTime) <= 15) {
-        nextTaskEl.classList.add('alert-task');
-      }
-    }
-  }
-
-  setInterval(updateNextTask, 60000);
-  updateNextTask();
-
-  // --- Busca ---
   document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       const query = e.target.value.trim();
@@ -241,7 +214,687 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- Scroll fix ---
   document.body.style.overflow = 'hidden';
   window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+  loadTasks();
+  setInterval(updateTaskPreview, 60000);
+});
+
+//ao adicionar o meu JS o meu style ficou bagunçado:
+document.addEventListener('DOMContentLoaded', () => {
+  // Utilitários
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  const timeDifference = (t1, t2) => {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    return Math.abs(h1 * 60 + m1 - (h2 * 60 + m2));
+  };
+
+  // Elementos principais
+  const todoInput = document.getElementById('todoInput');
+  const todoTime = document.getElementById('todoTime');
+  const todoPeriod = document.getElementById('todoPeriod');
+  const addTodoBtn = document.getElementById('addTodo');
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  const previewContainer = document.getElementById('taskPreview');
+
+  // Criação de item visual da tarefa
+  function createTaskElement(text, time = '') {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = text;
+    if (time) span.dataset.time = time;
+    li.appendChild(span);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.onclick = () => {
+      li.remove();
+      saveTasks();
+      updateTaskPreview();
+    };
+    li.appendChild(deleteBtn);
+
+    li.addEventListener('click', e => {
+      if (e.target !== deleteBtn) {
+        li.classList.toggle('done');
+        saveTasks();
+        updateTaskPreview();
+      }
+    });
+
+    return li;
+  }
+
+  // Salvar tarefas no localStorage
+  function saveTasks() {
+    const tasks = {};
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      tasks[period] = [...list.querySelectorAll('li')].map(li => {
+        const span = li.querySelector('span');
+        return {
+          text: span.textContent,
+          time: span.dataset.time || '',
+          done: li.classList.contains('done')
+        };
+      });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Carregar tarefas do localStorage
+  function loadTasks() {
+    const saved = JSON.parse(localStorage.getItem('tasks') || '{}');
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      list.innerHTML = '';
+      (saved[period] || []).forEach(task => {
+        const li = createTaskElement(task.text, task.time);
+        if (task.done) li.classList.add('done');
+        list.appendChild(li);
+      });
+    });
+    updateTaskPreview();
+  }
+
+  // Remover tarefa de todas as listas
+  function removeTaskByTextAndTime(text, time) {
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        if (span.textContent === text && span.dataset.time === time) {
+          li.remove();
+        }
+      });
+    });
+    saveTasks();
+  }
+
+  // Atualizar área "Próxima tarefa"
+  function updateTaskPreview() {
+    previewContainer.innerHTML = '';
+    const now = new Date();
+    const nowTime = now.toTimeString().slice(0, 5);
+
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        const task = span.textContent;
+        const time = span.dataset.time || '';
+
+        const container = document.createElement('div');
+        container.className = 'task-preview';
+        container.textContent = task + (time ? ` (${time})` : '');
+
+        if (time) {
+          const diff = timeDifference(nowTime, time);
+          if (diff <= 15) {
+            container.classList.add('alert-task');
+
+            const btn = document.createElement('button');
+            btn.textContent = 'Desligar Alarme';
+            btn.className = 'dismiss-alert-btn';
+            btn.onclick = () => {
+              removeTaskByTextAndTime(task, time);
+              updateTaskPreview();
+            };
+            container.appendChild(btn);
+          }
+        }
+
+        previewContainer.appendChild(container);
+      });
+    });
+  }
+
+  // Adicionar nova tarefa
+  addTodoBtn.addEventListener('click', () => {
+    const task = todoInput.value.trim();
+    const time = todoTime.value;
+    const period = todoPeriod.value;
+
+    if (task) {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      const li = createTaskElement(task, time);
+      list.appendChild(li);
+      todoInput.value = '';
+      todoTime.value = '';
+      saveTasks();
+      updateTaskPreview();
+    }
+  });
+
+  // Alternar exibição da lista de tarefas
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = todoDetails.style.display === 'none';
+    todoDetails.style.display = isHidden ? 'block' : 'none';
+    toggleBtn.textContent = isHidden ? '－' : '＋';
+  });
+
+  // Pesquisa Google
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (query) window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
+  });
+
+  // Bloqueio de scroll
+  document.body.style.overflow = 'hidden';
+  window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+  loadTasks();
+  setInterval(updateTaskPreview, 60000);
+});
+document.addEventListener('DOMContentLoaded', () => {
+  // Utilitários
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  const timeDifference = (t1, t2) => {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    return Math.abs(h1 * 60 + m1 - (h2 * 60 + m2));
+  };
+
+  // Elementos principais
+  const todoInput = document.getElementById('todoInput');
+  const todoTime = document.getElementById('todoTime');
+  const todoPeriod = document.getElementById('todoPeriod');
+  const addTodoBtn = document.getElementById('addTodo');
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  const previewContainer = document.getElementById('taskPreview');
+
+  // Criação de item visual da tarefa
+  function createTaskElement(text, time = '') {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = text;
+    if (time) span.dataset.time = time;
+    li.appendChild(span);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.onclick = () => {
+      li.remove();
+      saveTasks();
+      updateTaskPreview();
+    };
+    li.appendChild(deleteBtn);
+
+    li.addEventListener('click', e => {
+      if (e.target !== deleteBtn) {
+        li.classList.toggle('done');
+        saveTasks();
+        updateTaskPreview();
+      }
+    });
+
+    return li;
+  }
+
+  // Salvar tarefas no localStorage
+  function saveTasks() {
+    const tasks = {};
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      tasks[period] = [...list.querySelectorAll('li')].map(li => {
+        const span = li.querySelector('span');
+        return {
+          text: span.textContent,
+          time: span.dataset.time || '',
+          done: li.classList.contains('done')
+        };
+      });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Carregar tarefas do localStorage
+  function loadTasks() {
+    const saved = JSON.parse(localStorage.getItem('tasks') || '{}');
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      list.innerHTML = '';
+      (saved[period] || []).forEach(task => {
+        const li = createTaskElement(task.text, task.time);
+        if (task.done) li.classList.add('done');
+        list.appendChild(li);
+      });
+    });
+    updateTaskPreview();
+  }
+
+  // Remover tarefa de todas as listas
+  function removeTaskByTextAndTime(text, time) {
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        if (span.textContent === text && span.dataset.time === time) {
+          li.remove();
+        }
+      });
+    });
+    saveTasks();
+  }
+
+  // Atualizar área "Próxima tarefa"
+  function updateTaskPreview() {
+    previewContainer.innerHTML = '';
+    const now = new Date();
+    const nowTime = now.toTimeString().slice(0, 5);
+
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        const task = span.textContent;
+        const time = span.dataset.time || '';
+
+        const container = document.createElement('div');
+        container.className = 'task-preview';
+        container.textContent = task + (time ? ` (${time})` : '');
+
+        if (time) {
+          const diff = timeDifference(nowTime, time);
+          if (diff <= 15) {
+            container.classList.add('alert-task');
+
+            const btn = document.createElement('button');
+            btn.textContent = 'Desligar Alarme';
+            btn.className = 'dismiss-alert-btn';
+            btn.onclick = () => {
+              removeTaskByTextAndTime(task, time);
+              updateTaskPreview();
+            };
+            container.appendChild(btn);
+          }
+        }
+
+        previewContainer.appendChild(container);
+      });
+    });
+  }
+
+  // Adicionar nova tarefa
+  addTodoBtn.addEventListener('click', () => {
+    const task = todoInput.value.trim();
+    const time = todoTime.value;
+    const period = todoPeriod.value;
+
+    if (task) {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      const li = createTaskElement(task, time);
+      list.appendChild(li);
+      todoInput.value = '';
+      todoTime.value = '';
+      saveTasks();
+      updateTaskPreview();
+    }
+  });
+
+  // Alternar exibição da lista de tarefas
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = todoDetails.style.display === 'none';
+    todoDetails.style.display = isHidden ? 'block' : 'none';
+    toggleBtn.textContent = isHidden ? '－' : '＋';
+  });
+
+  // Pesquisa Google
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (query) window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
+  });
+
+  // Bloqueio de scroll
+  document.body.style.overflow = 'hidden';
+  window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+  loadTasks();
+  setInterval(updateTaskPreview, 60000);
+});
+document.addEventListener('DOMContentLoaded', () => {
+  // Utilitários
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  const timeDifference = (t1, t2) => {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    return Math.abs(h1 * 60 + m1 - (h2 * 60 + m2));
+  };
+
+  // Elementos principais
+  const todoInput = document.getElementById('todoInput');
+  const todoTime = document.getElementById('todoTime');
+  const todoPeriod = document.getElementById('todoPeriod');
+  const addTodoBtn = document.getElementById('addTodo');
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  const previewContainer = document.getElementById('taskPreview');
+
+  // Criação de item visual da tarefa
+  function createTaskElement(text, time = '') {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = text;
+    if (time) span.dataset.time = time;
+    li.appendChild(span);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.onclick = () => {
+      li.remove();
+      saveTasks();
+      updateTaskPreview();
+    };
+    li.appendChild(deleteBtn);
+
+    li.addEventListener('click', e => {
+      if (e.target !== deleteBtn) {
+        li.classList.toggle('done');
+        saveTasks();
+        updateTaskPreview();
+      }
+    });
+
+    return li;
+  }
+
+  // Salvar tarefas no localStorage
+  function saveTasks() {
+    const tasks = {};
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      tasks[period] = [...list.querySelectorAll('li')].map(li => {
+        const span = li.querySelector('span');
+        return {
+          text: span.textContent,
+          time: span.dataset.time || '',
+          done: li.classList.contains('done')
+        };
+      });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Carregar tarefas do localStorage
+  function loadTasks() {
+    const saved = JSON.parse(localStorage.getItem('tasks') || '{}');
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      list.innerHTML = '';
+      (saved[period] || []).forEach(task => {
+        const li = createTaskElement(task.text, task.time);
+        if (task.done) li.classList.add('done');
+        list.appendChild(li);
+      });
+    });
+    updateTaskPreview();
+  }
+
+  // Remover tarefa de todas as listas
+  function removeTaskByTextAndTime(text, time) {
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        if (span.textContent === text && span.dataset.time === time) {
+          li.remove();
+        }
+      });
+    });
+    saveTasks();
+  }
+
+  // Atualizar área "Próxima tarefa"
+  function updateTaskPreview() {
+    previewContainer.innerHTML = '';
+    const now = new Date();
+    const nowTime = now.toTimeString().slice(0, 5);
+
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        const task = span.textContent;
+        const time = span.dataset.time || '';
+
+        const container = document.createElement('div');
+        container.className = 'task-preview';
+        container.textContent = task + (time ? ` (${time})` : '');
+
+        if (time) {
+          const diff = timeDifference(nowTime, time);
+          if (diff <= 15) {
+            container.classList.add('alert-task');
+
+            const btn = document.createElement('button');
+            btn.textContent = 'Desligar Alarme';
+            btn.className = 'dismiss-alert-btn';
+            btn.onclick = () => {
+              removeTaskByTextAndTime(task, time);
+              updateTaskPreview();
+            };
+            container.appendChild(btn);
+          }
+        }
+
+        previewContainer.appendChild(container);
+      });
+    });
+  }
+
+  // Adicionar nova tarefa
+  addTodoBtn.addEventListener('click', () => {
+    const task = todoInput.value.trim();
+    const time = todoTime.value;
+    const period = todoPeriod.value;
+
+    if (task) {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      const li = createTaskElement(task, time);
+      list.appendChild(li);
+      todoInput.value = '';
+      todoTime.value = '';
+      saveTasks();
+      updateTaskPreview();
+    }
+  });
+
+  // Alternar exibição da lista de tarefas
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = todoDetails.style.display === 'none';
+    todoDetails.style.display = isHidden ? 'block' : 'none';
+    toggleBtn.textContent = isHidden ? '－' : '＋';
+  });
+
+  // Pesquisa Google
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (query) window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
+  });
+
+  // Bloqueio de scroll
+  document.body.style.overflow = 'hidden';
+  window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+  loadTasks();
+  setInterval(updateTaskPreview, 60000);
+});
+document.addEventListener('DOMContentLoaded', () => {
+  // Utilitários
+  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+  const timeDifference = (t1, t2) => {
+    const [h1, m1] = t1.split(':').map(Number);
+    const [h2, m2] = t2.split(':').map(Number);
+    return Math.abs(h1 * 60 + m1 - (h2 * 60 + m2));
+  };
+
+  // Elementos principais
+  const todoInput = document.getElementById('todoInput');
+  const todoTime = document.getElementById('todoTime');
+  const todoPeriod = document.getElementById('todoPeriod');
+  const addTodoBtn = document.getElementById('addTodo');
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  const previewContainer = document.getElementById('taskPreview');
+
+  // Criação de item visual da tarefa
+  function createTaskElement(text, time = '') {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.textContent = text;
+    if (time) span.dataset.time = time;
+    li.appendChild(span);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '🗑️';
+    deleteBtn.onclick = () => {
+      li.remove();
+      saveTasks();
+      updateTaskPreview();
+    };
+    li.appendChild(deleteBtn);
+
+    li.addEventListener('click', e => {
+      if (e.target !== deleteBtn) {
+        li.classList.toggle('done');
+        saveTasks();
+        updateTaskPreview();
+      }
+    });
+
+    return li;
+  }
+
+  // Salvar tarefas no localStorage
+  function saveTasks() {
+    const tasks = {};
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      tasks[period] = [...list.querySelectorAll('li')].map(li => {
+        const span = li.querySelector('span');
+        return {
+          text: span.textContent,
+          time: span.dataset.time || '',
+          done: li.classList.contains('done')
+        };
+      });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // Carregar tarefas do localStorage
+  function loadTasks() {
+    const saved = JSON.parse(localStorage.getItem('tasks') || '{}');
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      list.innerHTML = '';
+      (saved[period] || []).forEach(task => {
+        const li = createTaskElement(task.text, task.time);
+        if (task.done) li.classList.add('done');
+        list.appendChild(li);
+      });
+    });
+    updateTaskPreview();
+  }
+
+  // Remover tarefa de todas as listas
+  function removeTaskByTextAndTime(text, time) {
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        if (span.textContent === text && span.dataset.time === time) {
+          li.remove();
+        }
+      });
+    });
+    saveTasks();
+  }
+
+  // Atualizar área "Próxima tarefa"
+  function updateTaskPreview() {
+    previewContainer.innerHTML = '';
+    const now = new Date();
+    const nowTime = now.toTimeString().slice(0, 5);
+
+    ['morning', 'afternoon', 'night'].forEach(period => {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      [...list.querySelectorAll('li')].forEach(li => {
+        const span = li.querySelector('span');
+        const task = span.textContent;
+        const time = span.dataset.time || '';
+
+        const container = document.createElement('div');
+        container.className = 'task-preview';
+        container.textContent = task + (time ? ` (${time})` : '');
+
+        if (time) {
+          const diff = timeDifference(nowTime, time);
+          if (diff <= 15) {
+            container.classList.add('alert-task');
+
+            const btn = document.createElement('button');
+            btn.textContent = 'Desligar Alarme';
+            btn.className = 'dismiss-alert-btn';
+            btn.onclick = () => {
+              removeTaskByTextAndTime(task, time);
+              updateTaskPreview();
+            };
+            container.appendChild(btn);
+          }
+        }
+
+        previewContainer.appendChild(container);
+      });
+    });
+  }
+
+  // Adicionar nova tarefa
+  addTodoBtn.addEventListener('click', () => {
+    const task = todoInput.value.trim();
+    const time = todoTime.value;
+    const period = todoPeriod.value;
+
+    if (task) {
+      const list = document.getElementById(`todo${capitalize(period)}`);
+      const li = createTaskElement(task, time);
+      list.appendChild(li);
+      todoInput.value = '';
+      todoTime.value = '';
+      saveTasks();
+      updateTaskPreview();
+    }
+  });
+
+  // Alternar exibição da lista de tarefas
+  toggleBtn.addEventListener('click', () => {
+    const isHidden = todoDetails.style.display === 'none';
+    todoDetails.style.display = isHidden ? 'block' : 'none';
+    toggleBtn.textContent = isHidden ? '－' : '＋';
+  });
+
+  // Pesquisa Google
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const query = e.target.value.trim();
+      if (query) window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+    }
+  });
+
+  // Bloqueio de scroll
+  document.body.style.overflow = 'hidden';
+  window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+  loadTasks();
+  setInterval(updateTaskPreview, 60000);
 });
