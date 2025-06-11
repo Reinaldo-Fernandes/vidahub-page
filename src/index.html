@@ -4,58 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Painel de Produtividade</title>
+
+  <!-- Estilo principal -->
   <link rel="stylesheet" href="styles.css" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-  <!-- FontAwesome para ícones -->
- <link
-  rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
-/>
-
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
-  <!-- Background Animations -->
+
+  <!-- Animações de fundo -->
   <div class="cloud"></div>
   <div class="cloud"></div>
   <div class="cloud"></div>
   <div class="cloud"></div>
   <div class="rain"></div>
 
+  <!-- Cabeçalho -->
   <header>
     <h1>Painel de Produtividade</h1>
   </header>
 
+  <!-- Painel principal -->
   <main class="dashboard">
 
-
     <!-- Relógio -->
-    <section class="widget" id="clock-widget" aria-label="Relógio e atalhos de pausa">
+    <section class="widget" id="clock-widget">
       <h2>Relógio</h2>
-      <div id="clock" aria-live="polite" aria-atomic="true">00:00</div>
-      <div class="date" aria-live="polite" aria-atomic="true">Segunda-feira, 5 de Junho</div>
-
-        <div id="clockIcons" class="icon-grid" style="margin-top: 8px;">
-      <button title="Pausa" class="icon-btn" type="button" aria-label="pausa">
-        <i class="fas fa-pause"></i>
-      </button>
-
-      <button title="Beber Água" class="icon-btn" type="button" aria-label="agua">
-        <i class="fa-solid fa-glass-water"></i>
-      </button>
-
-      <button title="Alongar" class="icon-btn" type="button" aria-label="alongar">
-        <i class="fas fa-running"></i>
-      </button>
-    </div>
-
+      <div id="clock">00:00</div>
+      <div class="date">Segunda-feira, 5 de Junho</div>
+      <div id="clockIcons" class="icon-grid" style="margin-top: 8px;">
+        <button title="Pausa" class="icon-btn"><i class="fas fa-pause"></i></button>
+        <button title="Beber Água" class="icon-btn"><i class="fa-solid fa-glass-water"></i></button>
+        <button title="Alongar" class="icon-btn"><i class="fas fa-running"></i></button>
+      </div>
     </section>
 
     <!-- Tempo -->
-    <section class="widget" id="weather-widget" aria-label="Informações do tempo">
+    <section class="widget" id="weather-widget">
       <div class="weather-info">
-        <div class="city" aria-live="polite">Detectando localização...</div>
-        <img id="weatherIcon" src="" alt="Ícone representando o tempo atual" />
+        <div class="city">Detectando localização...</div>
+        <img id="weatherIcon" src="" alt="Ícone do tempo" />
         <div class="temp">--</div>
         <div class="desc">Predom. ensolarado</div>
         <div class="minmax">Mín: -- / Máx: --</div>
@@ -63,117 +52,63 @@
     </section>
 
     <!-- Lista de Tarefas -->
-    <section class="widget" id="todo-widget" aria-label="Lista de tarefas">
+    <section class="widget" id="todo-widget">
       <h2>Lista de Tarefas</h2>
 
-      <div id="current-task" aria-live="polite" aria-atomic="true">
+      <div id="current-task">
         <strong>Próxima tarefa:</strong> <span id="nextTask">Nenhuma</span>
         <div id="taskPreview" class="task-preview-container"></div>
       </div>
 
-      <button id="toggleTodo" aria-expanded="false" aria-controls="todoDetails" aria-label="Mostrar/Ocultar detalhes das tarefas">＋</button>
+      <button id="toggleTodo" aria-expanded="false" aria-controls="todoDetails">＋</button>
 
-      <div id="todoDetails" hidden>
+      <div id="todoDetails" style="display: none;">
         <div class="todo-section">
           <h3>Manhã ☀️</h3>
-          <ul id="todoMorning" aria-label="Tarefas da manhã"></ul>
+          <ul id="todoMorning"></ul>
           <button type="button" id="clearMorning">Limpar Manhã</button>
         </div>
 
         <div class="todo-section">
           <h3>Tarde 🌤️</h3>
-          <ul id="todoAfternoon" aria-label="Tarefas da tarde"></ul>
+          <ul id="todoAfternoon"></ul>
           <button type="button" id="clearAfternoon">Limpar Tarde</button>
         </div>
 
         <div class="todo-section">
           <h3>Noite 🌙</h3>
-          <ul id="todoNight" aria-label="Tarefas da noite"></ul>
+          <ul id="todoNight"></ul>
           <button type="button" id="clearNight">Limpar Noite</button>
         </div>
 
         <div class="todo-inputs">
-          <input
-            type="text"
-            id="todoInput"
-            placeholder="Nova tarefa"
-            aria-label="Nova tarefa"
-          />
-          <input type="time" id="todoTime" aria-label="Horário da tarefa" />
-          <select id="todoPeriod" aria-label="Período do dia para a tarefa">
+          <input type="text" id="todoInput" placeholder="Nova tarefa" />
+          <input type="time" id="todoTime" />
+          <select id="todoPeriod">
             <option value="morning">Manhã</option>
             <option value="afternoon">Tarde</option>
             <option value="night">Noite</option>
           </select>
-          <button id="addTodo" type="button" aria-label="Adicionar tarefa">
-            Adicionar tarefa
-          </button>
+          <button id="addTodo" type="button">Adicionar tarefa</button>
         </div>
       </div>
     </section>
 
-    <!-- Links Rápidos -->
-    <section class="widget" id="quick-links-widget" aria-label="Links rápidos para sites">
+    <!-- Links rápidos -->
+    <section class="widget" id="quick-links-widget">
       <h2>Links Rápidos</h2>
       <div class="icon-grid">
-        <a
-          href="https://google.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="Google"
-          aria-label="Google"
-          >G</a
-        >
-        <a
-          href="https://gmail.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="Gmail"
-          aria-label="Gmail"
-          >M</a
-        >
-        <a
-          href="https://youtube.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="YouTube"
-          aria-label="YouTube"
-          >Y</a
-        >
-        <a
-          href="https://drive.google.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="Google Drive"
-          aria-label="Google Drive"
-          >D</a
-        >
-        <a
-          href="https://www.instagram.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="Instagram"
-          aria-label="Instagram"
-          >I</a
-        >
-        <a
-          href="https://www.linkedin.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="icon-btn"
-          title="LinkedIn"
-          aria-label="LinkedIn"
-          >In</a
-        >
+        <a href="https://google.com" target="_blank" class="icon-btn">G</a>
+        <a href="https://gmail.com" target="_blank" class="icon-btn">M</a>
+        <a href="https://youtube.com" target="_blank" class="icon-btn">Y</a>
+        <a href="https://drive.google.com" target="_blank" class="icon-btn">D</a>
+        <a href="https://instagram.com" target="_blank" class="icon-btn">I</a>
+        <a href="https://linkedin.com" target="_blank" class="icon-btn">In</a>
       </div>
     </section>
   </main>
 
+  <!-- Scripts -->
   <script src="script.js"></script>
 </body>
 </html>

@@ -1,186 +1,271 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const clockElement = document.getElementById('clock');
-  const dateElement = document.querySelector('.date');
-  const cityEl = document.querySelector('.city');
-  const weatherIcon = document.getElementById('weatherIcon');
-  const tempEl = document.querySelector('.temp');
-  const descEl = document.querySelector('.desc');
-  const minmaxEl = document.querySelector('.minmax');
+// --- Utilitário ---
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
-  const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+// --- Relógio ---
+function updateClock() {
+  const now = new Date();
+  const clock = document.getElementById('clock');
+  const dateElem = document.querySelector('.date');
 
-  function updateClockAndDate() {
-    const now = new Date();
-    clockElement.textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    dateElement.textContent = capitalize(
-      now.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
-    );
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  clock.textContent = `${hours}:${minutes}`;
+
+  const options = { weekday: 'long', day: 'numeric', month: 'long' };
+  const formattedDate = now.toLocaleDateString('pt-BR', options);
+  dateElem.textContent = capitalize(formattedDate);
+}
+
+// --- Tarefas ---
+function createTaskElement(text, time = '', done = false) {
+  const li = document.createElement('li');
+  li.className = done ? 'done' : '';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = done;
+  checkbox.addEventListener('change', () => {
+    li.classList.toggle('done', checkbox.checked);
+    saveTasks();
+    updateTaskPreview();
+  });
+  li.appendChild(checkbox);
+
+  const span = document.createElement('span');
+  span.className = 'task-text';
+  span.textContent = text;
+  if (time) span.dataset.time = time;
+  li.appendChild(span);
+
+  if (time) {
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'task-time';
+    timeSpan.textContent = time;
+    li.appendChild(timeSpan);
   }
-  setInterval(updateClockAndDate, 1000);
-  updateClockAndDate();
 
-  function updateWeatherTheme(weatherCondition) {
-    const body = document.body;
-    const clouds = document.querySelectorAll('.cloud');
-    body.className = '';
-    body.classList.add(`weather-${weatherCondition}`);
+  const deleteBtn = document.createElement('button');
+  deleteBtn.textContent = '🗑️';
+  deleteBtn.className = 'delete-task-btn';
+  deleteBtn.onclick = () => {
+    li.remove();
+    saveTasks();
+    updateTaskPreview();
+  };
+  li.appendChild(deleteBtn);
 
-    clouds.forEach(cloud => {
-      cloud.querySelectorAll('.rain-drop').forEach(drop => drop.remove());
+  return li;
+}
+
+function saveTasks() {
+  const tasks = {};
+  ['morning', 'afternoon', 'night'].forEach(period => {
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    tasks[period] = [...list.querySelectorAll('li')].map(li => {
+      const checkbox = li.querySelector('input[type="checkbox"]');
+      const span = li.querySelector('.task-text');
+      const time = span.dataset.time || '';
+      return {
+        text: span.textContent,
+        time,
+        done: checkbox.checked
+      };
     });
+  });
+  localStorage.setItem('tasks', JSON.stringify(tasks));
+}
 
-    if (weatherCondition === 'rain') {
-      clouds.forEach(cloud => {
-        const numberOfDrops = 30;
-        for (let i = 0; i < numberOfDrops; i++) {
-          const rainDrop = document.createElement('div');
-          rainDrop.classList.add('rain-drop');
-          rainDrop.style.left = `${Math.random() * 100}%`;
-          rainDrop.style.animationDelay = `${Math.random() * 3}s`;
-          rainDrop.style.animationDuration = `${5 + Math.random() * 5}s`;
-          cloud.appendChild(rainDrop);
-        }
-      });
-    }
+function loadTasks() {
+  const saved = JSON.parse(localStorage.getItem('tasks') || '{}');
+  ['morning', 'afternoon', 'night'].forEach(period => {
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    list.innerHTML = '';
+    (saved[period] || []).forEach(task => {
+      const li = createTaskElement(task.text, task.time, task.done);
+      list.appendChild(li);
+    });
+  });
+  updateTaskPreview();
+}
+
+function updateTaskPreview() {
+  const now = new Date();
+  let nextTask = null;
+  let nextTaskTime = null;
+
+  function getDateFromTime(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes, 0, 0);
+    return date;
   }
 
-  function fetchWeatherByCoords(lat, lon) {
-    const apiKey = '6b2e9835bf99ae05ed4e3fe8b2fdf128';
-    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(data => {
-        if (data.cod !== 200) throw new Error(data.message);
-
-        const { icon, description, id } = data.weather[0];
-        const now = new Date();
-        const nowSeconds = now.getTime() / 1000;
-        const isNightTime = nowSeconds > data.sys.sunset || nowSeconds < data.sys.sunrise;
-
-        weatherIcon.src = `https://openweathermap.org/img/wn/${icon}@2x.png`;
-        weatherIcon.alt = description;
-        tempEl.textContent = `${Math.round(data.main.temp)}°C`;
-        descEl.textContent = capitalize(description);
-        minmaxEl.textContent = `Mín: ${Math.round(data.main.temp_min)}° / Máx: ${Math.round(data.main.temp_max)}°`;
-        cityEl.textContent = data.name;
-
-        let weatherCondition = 'clear';
-        if (isNightTime) weatherCondition = 'night';
-        else if (id >= 200 && id < 300) weatherCondition = 'thunderstorm';
-        else if (id >= 300 && id < 600) weatherCondition = 'rain';
-        else if (id >= 600 && id < 700) weatherCondition = 'snow';
-        else if (id >= 700 && id < 800) weatherCondition = 'mist';
-        else if (id === 800) weatherCondition = 'clear';
-        else if (id <= 802) weatherCondition = 'partly-cloudy';
-        else weatherCondition = 'cloudy';
-
-        updateWeatherTheme(weatherCondition);
-      })
-      .catch(err => {
-        console.error("Erro ao buscar dados do tempo:", err);
-        tempEl.textContent = '--';
-        descEl.textContent = 'Erro ao carregar';
-        minmaxEl.textContent = '';
-        weatherIcon.src = '';
-        cityEl.textContent = 'Localização indisponível';
-        updateWeatherTheme('clear');
-      });
+  function checkPeriodTasks(period) {
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    [...list.querySelectorAll('li:not(.done)')].forEach(task => {
+      const span = task.querySelector('.task-text');
+      const timeStr = span.dataset.time;
+      if (timeStr) {
+        const taskTime = getDateFromTime(timeStr);
+        if (taskTime >= now) {
+          if (!nextTaskTime || taskTime < nextTaskTime) {
+            nextTask = task;
+            nextTaskTime = taskTime;
+          }
+        }
+      } else if (!nextTaskTime && !nextTask) {
+        nextTask = task;
+      }
+    });
   }
 
-  function getUserLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        ({ coords }) => fetchWeatherByCoords(coords.latitude, coords.longitude),
-        () => {
-          cityEl.textContent = 'Localização não permitida. Exibindo tempo para Natal.';
-          fetchWeatherByCoords(-5.79448, -35.211);
-        }
-      );
+  ['morning', 'afternoon', 'night'].forEach(checkPeriodTasks);
+
+  const nextTaskSpan = document.getElementById('nextTask');
+  const taskPreviewContainer = document.getElementById('taskPreview');
+
+  if (nextTask) {
+    const text = nextTask.querySelector('.task-text').textContent;
+    const time = nextTask.querySelector('.task-text').dataset.time || '';
+    nextTaskSpan.textContent = time ? `${text} às ${time}` : text;
+  } else {
+    nextTaskSpan.textContent = 'Nenhuma';
+  }
+
+  taskPreviewContainer.innerHTML = '';
+  ['morning', 'afternoon', 'night'].forEach(period => {
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    [...list.querySelectorAll('li')].forEach(li => {
+      const clone = li.cloneNode(true);
+      const checkbox = clone.querySelector('input[type="checkbox"]');
+      const deleteBtn = clone.querySelector('.delete-task-btn');
+      if (checkbox) checkbox.remove();
+      if (deleteBtn) deleteBtn.remove();
+      taskPreviewContainer.appendChild(clone);
+    });
+  });
+
+  // Alerta visual se faltar 15min ou menos
+  if (nextTaskTime) {
+    const diffMs = nextTaskTime - now;
+    if (diffMs <= 15 * 60 * 1000 && diffMs >= 0) {
+      nextTaskSpan.classList.add('alert');
     } else {
-      cityEl.textContent = 'Geolocalização não suportada. Exibindo tempo para Natal.';
-      fetchWeatherByCoords(-5.79448, -35.211);
+      nextTaskSpan.classList.remove('alert');
     }
-  }
-  getUserLocation();
-
-  function aplicarEfeitoGlow(botao) {
-    if (!botao.classList.contains('glow-button')) {
-      botao.classList.add('glow-button');
-    }
-  }
-
-  function handleBotaoClick(botao) {
-    stopTimer();
-    botao.classList.remove('glow-button');
-    console.log('Brilho removido manualmente por clique.');
-  }
-
-  document.querySelectorAll('#clockIcons button').forEach(button => {
-    button.addEventListener('click', () => handleBotaoClick(button));
-  });
-});
-
-// Inicia contador de tempo ao abrir a página
-// Variáveis globais para controle do timer
-window.seconds = 0;
-window.timerId = null;
-
-// Função para aplicar efeito glow (brilho) no botão
-function aplicarEfeitoGlow(botao) {
-  if (!botao.classList.contains('glow-button')) {
-    botao.classList.add('glow-button');
+  } else {
+    nextTaskSpan.classList.remove('alert');
   }
 }
 
-// Função para parar o timer
-function stopTimer() {
-  if (window.timerId !== null) {
-    clearInterval(window.timerId);
-    window.timerId = null;
-    console.log('Timer parado.');
-  }
+function clearTasks(period) {
+  const list = document.getElementById(`todo${capitalize(period)}`);
+  list.innerHTML = '';
+  saveTasks();
+  updateTaskPreview();
 }
 
-// Função para iniciar o timer
-function startTimer() {
-  if (window.timerId === null) {
-    window.timerId = setInterval(() => {
-      window.seconds++;
-
-      const pausas = [
-        { tipo: 'pausa', segundos: 30 * 60 },
-        { tipo: 'agua', segundos: 45 * 60 },
-        { tipo: 'alongar', segundos: 60 * 60 }
-      ];
-
-      pausas.forEach(({ tipo, segundos }) => {
-        if (window.seconds === segundos) {
-          const botao = document.querySelector(`#clockIcons button[aria-label="${tipo}"]`);
-          console.log('Buscando botão para tipo:', tipo, 'Resultado:', botao);
-          if (botao) aplicarEfeitoGlow(botao);
-        }
-      });
-    }, 1000);
-    console.log('Timer iniciado.');
-  }
-}
-
-// Função executada ao clicar no botão
-function handleBotaoClick(botao) {
-  stopTimer(); // Para o timer
-  botao.classList.remove('glow-button'); // Remove brilho do botão clicado
-  console.log('Brilho removido manualmente por clique e timer parado.');
-}
-
+// --- Inicialização ---
 document.addEventListener('DOMContentLoaded', () => {
-  // Seu código de relógio, clima, etc, aqui...
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadTasks();
 
-  // Eventos para os botões
-  document.querySelectorAll('#clockIcons button').forEach(button => {
-    button.addEventListener('click', () => handleBotaoClick(button));
+  document.getElementById('addTodo').addEventListener('click', () => {
+    const text = document.getElementById('todoInput').value.trim();
+    const time = document.getElementById('todoTime').value;
+    const period = document.getElementById('todoPeriod').value;
+
+    if (!text) {
+      alert('Por favor, insira uma tarefa.');
+      return;
+    }
+
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    const li = createTaskElement(text, time);
+    list.appendChild(li);
+
+    document.getElementById('todoInput').value = '';
+    document.getElementById('todoTime').value = '';
+    saveTasks();
+    updateTaskPreview();
   });
 
-  // Inicia o timer ao carregar a página
-  startTimer();
+  ['morning', 'afternoon', 'night'].forEach(period => {
+    document.getElementById(`clear${capitalize(period)}`).addEventListener('click', () => {
+      clearTasks(period);
+    });
+  });
+
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  toggleBtn.addEventListener('click', () => {
+    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+    todoDetails.style.display = isExpanded ? 'none' : 'block';
+    toggleBtn.setAttribute('aria-expanded', !isExpanded);
+    toggleBtn.textContent = isExpanded ? '＋' : '−';
+  });
+
+  // Atualização a cada minuto
+  setInterval(() => {
+    updateClock();
+    updateTaskPreview();
+  }, 60 * 1000);
+
+  getLocation(); // Clima
 });
+
+
+// --- Clima com OpenWeatherMap ---
+function getWeather(lat, lon) {
+  const apiKey = '6b2e9835bf99ae05ed4e3fe8b2fdf128';
+  const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const weatherIcon = document.getElementById('weatherIcon');
+      const weatherCity = document.querySelector('.city');
+      const weatherTemp = document.querySelector('.temp');
+      const weatherDesc = document.querySelector('.desc');
+      const weatherMinMax = document.querySelector('.minmax');
+
+      const { name, weather, main } = data;
+      const icon = weather[0].icon;
+      const desc = weather[0].description;
+      const temp = Math.round(main.temp);
+      const min = Math.round(main.temp_min);
+      const max = Math.round(main.temp_max);
+
+      weatherCity.textContent = name;
+      weatherTemp.textContent = `${temp}°C`;
+      weatherDesc.textContent = capitalize(desc);
+      weatherMinMax.textContent = `Mín: ${min}° / Máx: ${max}°`;
+      weatherIcon.src = `https://openweathermap.org/img/wn/${icon}.png`;
+
+      // Define classe de clima no body
+      document.body.classList.add(`weather-${weather[0].main.toLowerCase()}`);
+    })
+    .catch(() => {
+      const weatherCity = document.querySelector('.city');
+      weatherCity.textContent = 'Erro ao obter clima';
+    });
+}
+
+function getLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        getWeather(latitude, longitude);
+      },
+      () => {
+        document.querySelector('.city').textContent = 'Permissão negada';
+      }
+    );
+  } else {
+    document.querySelector('.city').textContent = 'Geolocalização não suportada';
+  }
+}

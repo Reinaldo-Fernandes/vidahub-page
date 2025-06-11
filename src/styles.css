@@ -122,6 +122,11 @@ body.weather-night h1 { color: #e7e4e4; }
   50% { opacity: 0.6; }
 }
 
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 10px 3px rgb(50, 204, 3); }
+  50% { box-shadow: 0 0 20px 6px rgb(240, 1, 1); }
+}
+
 /* ===================== CABEÇALHO ===================== */
 header {
   display: flex;
@@ -158,7 +163,8 @@ button:hover { background: #444; }
 }
 
 /* ===================== LINKS RÁPIDOS ===================== */
-.links-rapidos {
+.links-rapidos,
+.widget {
   background: #2a2a2a;
   border-radius: 20px;
   box-shadow: inset 4px 4px 10px #151515,
@@ -170,33 +176,19 @@ button:hover { background: #444; }
   color: #ffffffcc;
 }
 
-.links-rapidos h2 {
+/* ===================== WIDGETS ===================== */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.widget h2 {
   margin-bottom: 12px;
   font-size: 1.2rem;
   color: #fff;
-}
-
-.links-rapidos ul {
-  list-style: none;
-  padding-left: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.links-rapidos a {
-  color: #fff;
-  text-decoration: none;
-  padding: 8px 12px;
-  background: #1e1e1e;
-  border-radius: 14px;
-  box-shadow: inset 2px 2px 6px #151515,
-              inset -2px -2px 6px #2e2e2e;
-  transition: background 0.3s, color 0.3s;
-}
-.links-rapidos a:hover {
-  background: #444;
-  color: #fff;
+  text-align: center;
 }
 
 /* ===================== ÍCONES CIRCULARES ===================== */
@@ -225,80 +217,42 @@ button:hover { background: #444; }
 }
 .icon-btn:hover { filter: brightness(1.2); }
 
-.icon-btn[href*="google"]   { color: #4285F4; }
-.icon-btn[href*="gmail"]    { color: #D93025; }
-.icon-btn[href*="youtube"]  { color: #FF0000; }
-.icon-btn[href*="drive"]    { color: #0F9D58; }
-.icon-btn[href*="instagram"]{ color: #ee2a7b; }
-.icon-btn[href*="linkedin"] { color: #ffffff; }
-
-/* ===================== LAYOUT PRINCIPAL ===================== */
-.dashboard {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.widget {
-  background: #2a2a2a;
-  border-radius: 20px;
-  box-shadow: inset 4px 4px 10px #151515,
-              inset -4px -4px 10px #2e2e2e,
-              4px 4px 10px #151515,
-              -4px -4px 10px #2e2e2e;
-  padding: 20px;
-  transition: all 0.3s ease;
-  color: #ffffffcc;
-}
-
-.widget h2 {
-  margin-bottom: 12px;
-  font-size: 1.2rem;
-  color: #fff;
-}
-
 /* ===================== RELÓGIO ===================== */
 #clock {
   font-size: 48px;
   font-weight: bold;
   margin-bottom: 8px;
   color: #fff;
+  text-align: center;
 }
 .date {
   font-size: 16px;
+  text-align: center;
 }
 
-/* ===================== TEMPO ===================== */
+/* ===================== CLIMA ===================== */
 .weather-info {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 6px;
-  align-items: flex-start;
+  text-align: center;
 }
 .weather-info img {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   filter: brightness(0) invert(1);
 }
-.city { font-size: 16px; font-weight: 600; color: #fff; }
-.temp { font-size: 40px; color: #fff; }
-.desc { font-size: 14px; }
-.minmax { font-size: 12px; }
 
 /* ===================== TAREFAS ===================== */
 #todoDetails {
-  display: none;
   transition: all 0.3s ease;
 }
-
-.todo-section h3 {
-  margin-top: 10px;
-  font-size: 1rem;
+.todo-section {
+  margin-top: 12px;
 }
-.todo-section button {
-  margin-top: 5px;
+.todo-section h3 {
+  margin-bottom: 8px;
 }
 .todo-section ul li {
   margin: 5px 0;
@@ -316,10 +270,7 @@ button:hover { background: #444; }
   cursor: pointer;
   font-size: 1rem;
 }
-
-#todoInput,
-#todoTime,
-#todoPeriod {
+#todoInput, #todoTime, #todoPeriod {
   width: 100%;
   padding: 8px 16px;
   border: none;
@@ -330,25 +281,42 @@ button:hover { background: #444; }
   box-shadow: inset 4px 4px 10px #151515,
               inset -4px -4px 10px #2e2e2e;
 }
-
 #todoTime {
   max-width: 80px;
 }
 #todoPeriod {
   max-width: 60px;
 }
-
-/* ===================== ALERTAS ===================== */
-.todo-alert {
-  background: #ff5c5c;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  color: white;
+.todo-inputs {
   margin-top: 10px;
-  text-align: center;
-  animation: pulse 1.5s infinite;
+}
+
+/* ===================== PRÉVIA DE TAREFAS ===================== */
+#current-task {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #1e1e1e;
+  border-radius: 12px;
+  box-shadow: inset 2px 2px 5px #121212,
+              inset -2px -2px 5px #2a2a2a;
+}
+.task-preview-container li {
+  margin: 4px 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ===================== ALERTA PRÓXIMA TAREFA ===================== */
+#nextTask.alert {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: #ff5c5c;
+  color: white;
+  animation: glowPulse 1.5s ease-in-out infinite;
 }
 
 /* ===================== SCROLL ===================== */
@@ -364,40 +332,21 @@ button:hover { background: #444; }
   border-radius: 10px;
 }
 
-/* ===================== RESPONSIVIDADE ===================== */
+/* ===================== RESPONSIVO ===================== */
 @media (max-width: 768px) {
   .links-rapidos ul {
     grid-template-columns: repeat(2, 1fr);
   }
 }
-
 @media (max-width: 480px) {
   .links-rapidos ul {
     grid-template-columns: 1fr;
   }
-
   h1 {
     font-size: 1.5rem;
   }
-
   header {
     margin-left: 0;
     justify-content: center;
-  }
-}
-
-/* ===================== EFEITO GLOW PARA PAUSAS ===================== */
-.glow-button {
-  position: relative;
-  box-shadow: 0 0 15px 5px rgb(243, 9, 9);
-  animation: glowPulse 1.5s ease-in-out infinite;
-}
-
-@keyframes glowPulse {
-  0%, 100% {
-    box-shadow: 0 0 10px 3px rgb(50, 204, 3);
-  }
-  50% {
-    box-shadow: 0 0 20px 6px rgb(240, 1, 1);
   }
 }
