@@ -22,6 +22,7 @@ function updateClock() {
 function createTaskElement(text, time = '', done = false) {
   const li = document.createElement('li');
   li.className = done ? 'done' : '';
+  li.dataset.taskId = `${text}-${time}-${Math.random().toString(36).substring(2, 8)}`;
 
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
@@ -147,14 +148,16 @@ function updateTaskPreview() {
     });
   });
 
-  // Alerta visual se faltar 15min ou menos
-  if (nextTaskTime) {
-    const diffMs = nextTaskTime - now;
-    if (diffMs <= 15 * 60 * 1000 && diffMs >= 0) {
-      nextTaskSpan.classList.add('alert');
-    } else {
-      nextTaskSpan.classList.remove('alert');
-    }
+  // Alerta visual: 1 minuto antes até 3 minutos depois
+  const ALERT_BEFORE_MS = 60 * 1000;
+  const ALERT_AFTER_MS = 3 * 60 * 1000;
+  const nextTaskId = nextTask?.dataset.taskId;
+
+  if (nextTaskTime && nextTaskId) {
+    const diff = nextTaskTime - now;
+    const shouldAlert = diff <= ALERT_BEFORE_MS && diff >= -ALERT_AFTER_MS;
+    nextTaskSpan.classList.toggle('alert', shouldAlert);
+    nextTaskSpan.dataset.taskId = nextTaskId;
   } else {
     nextTaskSpan.classList.remove('alert');
   }
@@ -208,17 +211,26 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleBtn.textContent = isExpanded ? '＋' : '−';
   });
 
-  // Atualização a cada minuto
+  // Remover alerta ao clicar na tarefa
+  document.getElementById('taskPreview').addEventListener('click', (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    const clickedId = li.dataset.taskId;
+    const preview = document.getElementById('nextTask');
+    if (preview.dataset.taskId === clickedId) {
+      preview.classList.remove('alert');
+    }
+  });
+
   setInterval(() => {
     updateClock();
     updateTaskPreview();
   }, 60 * 1000);
 
-  getLocation(); // Clima
+  getLocation();
 });
 
-
-// --- Clima com OpenWeatherMap ---
+// --- Clima ---
 function getWeather(lat, lon) {
   const apiKey = '6b2e9835bf99ae05ed4e3fe8b2fdf128';
   const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=pt_br`;
@@ -226,44 +238,24 @@ function getWeather(lat, lon) {
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      const weatherIcon = document.getElementById('weatherIcon');
-      const weatherCity = document.querySelector('.city');
-      const weatherTemp = document.querySelector('.temp');
-      const weatherDesc = document.querySelector('.desc');
-      const weatherMinMax = document.querySelector('.minmax');
-
       const { name, weather, main } = data;
-      const icon = weather[0].icon;
-      const desc = weather[0].description;
-      const temp = Math.round(main.temp);
-      const min = Math.round(main.temp_min);
-      const max = Math.round(main.temp_max);
-
-      weatherCity.textContent = name;
-      weatherTemp.textContent = `${temp}°C`;
-      weatherDesc.textContent = capitalize(desc);
-      weatherMinMax.textContent = `Mín: ${min}° / Máx: ${max}°`;
-      weatherIcon.src = `https://openweathermap.org/img/wn/${icon}.png`;
-
-      // Define classe de clima no body
+      document.querySelector('.city').textContent = name;
+      document.querySelector('.temp').textContent = `${Math.round(main.temp)}°C`;
+      document.querySelector('.desc').textContent = capitalize(weather[0].description);
+      document.querySelector('.minmax').textContent = `Mín: ${Math.round(main.temp_min)}° / Máx: ${Math.round(main.temp_max)}°`;
+      document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${weather[0].icon}.png`;
       document.body.classList.add(`weather-${weather[0].main.toLowerCase()}`);
     })
     .catch(() => {
-      const weatherCity = document.querySelector('.city');
-      weatherCity.textContent = 'Erro ao obter clima';
+      document.querySelector('.city').textContent = 'Erro ao obter clima';
     });
 }
 
 function getLocation() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
-      position => {
-        const { latitude, longitude } = position.coords;
-        getWeather(latitude, longitude);
-      },
-      () => {
-        document.querySelector('.city').textContent = 'Permissão negada';
-      }
+      pos => getWeather(pos.coords.latitude, pos.coords.longitude),
+      () => { document.querySelector('.city').textContent = 'Permissão negada'; }
     );
   } else {
     document.querySelector('.city').textContent = 'Geolocalização não suportada';
