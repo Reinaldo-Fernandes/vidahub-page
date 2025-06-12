@@ -15,7 +15,7 @@ function updateClock() {
 
   const options = { weekday: 'long', day: 'numeric', month: 'long' };
   const formattedDate = now.toLocaleDateString('pt-BR', options);
-  dateElem.textContent = capitalize(formattedDate);
+  if (dateElem) dateElem.textContent = capitalize(formattedDate);
 }
 
 // --- Tarefas ---
@@ -131,8 +131,27 @@ function updateTaskPreview() {
     const text = nextTask.querySelector('.task-text').textContent;
     const time = nextTask.querySelector('.task-text').dataset.time || '';
     nextTaskSpan.textContent = time ? `${text} às ${time}` : text;
+    nextTaskSpan.dataset.taskId = nextTask.dataset.taskId;
+
+    const ALERT_BEFORE_MS = 60 * 1000;
+    const ALERT_AFTER_MS = 3 * 60 * 1000;
+    const diff = nextTaskTime ? nextTaskTime - now : null;
+
+    if (nextTaskTime && diff !== null) {
+      const shouldAlert = diff <= ALERT_BEFORE_MS && diff >= -ALERT_AFTER_MS;
+      if (shouldAlert) {
+        nextTaskSpan.classList.add('alert');
+      } else {
+        nextTaskSpan.textContent = 'Nenhuma';
+        nextTaskSpan.classList.remove('alert');
+        nextTask = null;
+      }
+    } else {
+      nextTaskSpan.classList.remove('alert');
+    }
   } else {
     nextTaskSpan.textContent = 'Nenhuma';
+    nextTaskSpan.classList.remove('alert');
   }
 
   taskPreviewContainer.innerHTML = '';
@@ -140,27 +159,11 @@ function updateTaskPreview() {
     const list = document.getElementById(`todo${capitalize(period)}`);
     [...list.querySelectorAll('li')].forEach(li => {
       const clone = li.cloneNode(true);
-      const checkbox = clone.querySelector('input[type="checkbox"]');
-      const deleteBtn = clone.querySelector('.delete-task-btn');
-      if (checkbox) checkbox.remove();
-      if (deleteBtn) deleteBtn.remove();
+      clone.querySelector('input[type="checkbox"]')?.remove();
+      clone.querySelector('.delete-task-btn')?.remove();
       taskPreviewContainer.appendChild(clone);
     });
   });
-
-  // Alerta visual: 1 minuto antes até 3 minutos depois
-  const ALERT_BEFORE_MS = 60 * 1000;
-  const ALERT_AFTER_MS = 3 * 60 * 1000;
-  const nextTaskId = nextTask?.dataset.taskId;
-
-  if (nextTaskTime && nextTaskId) {
-    const diff = nextTaskTime - now;
-    const shouldAlert = diff <= ALERT_BEFORE_MS && diff >= -ALERT_AFTER_MS;
-    nextTaskSpan.classList.toggle('alert', shouldAlert);
-    nextTaskSpan.dataset.taskId = nextTaskId;
-  } else {
-    nextTaskSpan.classList.remove('alert');
-  }
 }
 
 function clearTasks(period) {
@@ -169,66 +172,6 @@ function clearTasks(period) {
   saveTasks();
   updateTaskPreview();
 }
-
-// --- Inicialização ---
-document.addEventListener('DOMContentLoaded', () => {
-  updateClock();
-  setInterval(updateClock, 1000);
-  loadTasks();
-
-  document.getElementById('addTodo').addEventListener('click', () => {
-    const text = document.getElementById('todoInput').value.trim();
-    const time = document.getElementById('todoTime').value;
-    const period = document.getElementById('todoPeriod').value;
-
-    if (!text) {
-      alert('Por favor, insira uma tarefa.');
-      return;
-    }
-
-    const list = document.getElementById(`todo${capitalize(period)}`);
-    const li = createTaskElement(text, time);
-    list.appendChild(li);
-
-    document.getElementById('todoInput').value = '';
-    document.getElementById('todoTime').value = '';
-    saveTasks();
-    updateTaskPreview();
-  });
-
-  ['morning', 'afternoon', 'night'].forEach(period => {
-    document.getElementById(`clear${capitalize(period)}`).addEventListener('click', () => {
-      clearTasks(period);
-    });
-  });
-
-  const toggleBtn = document.getElementById('toggleTodo');
-  const todoDetails = document.getElementById('todoDetails');
-  toggleBtn.addEventListener('click', () => {
-    const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
-    todoDetails.style.display = isExpanded ? 'none' : 'block';
-    toggleBtn.setAttribute('aria-expanded', !isExpanded);
-    toggleBtn.textContent = isExpanded ? '＋' : '−';
-  });
-
-  // Remover alerta ao clicar na tarefa
-  document.getElementById('taskPreview').addEventListener('click', (e) => {
-    const li = e.target.closest('li');
-    if (!li) return;
-    const clickedId = li.dataset.taskId;
-    const preview = document.getElementById('nextTask');
-    if (preview.dataset.taskId === clickedId) {
-      preview.classList.remove('alert');
-    }
-  });
-
-  setInterval(() => {
-    updateClock();
-    updateTaskPreview();
-  }, 60 * 1000);
-
-  getLocation();
-});
 
 // --- Clima ---
 function getWeather(lat, lon) {
@@ -261,3 +204,64 @@ function getLocation() {
     document.querySelector('.city').textContent = 'Geolocalização não suportada';
   }
 }
+
+// --- Inicialização ---
+document.addEventListener('DOMContentLoaded', () => {
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadTasks();
+
+  document.getElementById('addTodo')?.addEventListener('click', () => {
+    const text = document.getElementById('todoInput').value.trim();
+    const time = document.getElementById('todoTime').value;
+    const period = document.getElementById('todoPeriod').value;
+
+    if (!text) {
+      alert('Por favor, insira uma tarefa.');
+      return;
+    }
+
+    const list = document.getElementById(`todo${capitalize(period)}`);
+    const li = createTaskElement(text, time);
+    list.appendChild(li);
+
+    document.getElementById('todoInput').value = '';
+    document.getElementById('todoTime').value = '';
+    saveTasks();
+    updateTaskPreview();
+  });
+
+  ['morning', 'afternoon', 'night'].forEach(period => {
+    document.getElementById(`clear${capitalize(period)}`)?.addEventListener('click', () => {
+      clearTasks(period);
+    });
+  });
+
+  const toggleBtn = document.getElementById('toggleTodo');
+  const todoDetails = document.getElementById('todoDetails');
+  if (toggleBtn && todoDetails) {
+    toggleBtn.addEventListener('click', () => {
+      const isExpanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+      todoDetails.style.display = isExpanded ? 'none' : 'block';
+      toggleBtn.setAttribute('aria-expanded', (!isExpanded).toString());
+      toggleBtn.textContent = isExpanded ? '＋' : '−';
+    });
+  }
+
+  document.getElementById('taskPreview')?.addEventListener('click', (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    const clickedId = li.dataset.taskId;
+    const preview = document.getElementById('nextTask');
+    if (preview.dataset.taskId === clickedId) {
+      preview.classList.remove('alert');
+    }
+  });
+
+  setInterval(() => {
+    updateClock();
+    updateTaskPreview();
+  }, 60000);
+
+  getLocation();
+});
