@@ -4,7 +4,7 @@ Um painel web interativo para organizar tarefas, visualizar o clima, acompanhar 
 
 ## 🖼️ Demonstração
 
-(.![Vd](https://github.com/user-attachments/assets/5d4d31dc-c289-40c0-932e-6b7bd4d4688d)
+![Vd](https://github.com/user-attachments/assets/5d4d31dc-c289-40c0-932e-6b7bd4d4688d)
 
 ## 📋 Funcionalidades
 
