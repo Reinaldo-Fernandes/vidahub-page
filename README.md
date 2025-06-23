@@ -4,8 +4,8 @@ Um painel web interativo para organizar tarefas, visualizar o clima, acompanhar 
 
 ## 🖼️ Demonstração
 
-![Screenshot do Painel](preview.png) <!-- substitua por uma imagem se desejar -->
-
+![Screenshot do Painel](preview.![Vd](https://github.com/user-attachments/assets/5d4d31dc-c289-40c0-932e-6b7bd4d4688d)
+png) 
 ## 📋 Funcionalidades
 
 - ⏰ **Relógio e data atual** com lembretes de bem-estar (alongar, pausa, água)
