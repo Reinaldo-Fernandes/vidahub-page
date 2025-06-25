@@ -12,8 +12,11 @@ Um painel web interativo para organizar tarefas, visualizar o clima, acompanhar 
 - 🌦️ **Previsão do tempo** com base na localização (API OpenWeatherMap)
 - ✅ **Lista de tarefas** dividida por períodos do dia (manhã, tarde e noite), com drag & drop
 - 🔗 **Links rápidos** para Google, Gmail, YouTube, Drive, Instagram e LinkedIn
+
+## 📋 Próximas Funcionalidades 
+
 - 🌈 **Temas dinâmicos** com animações visuais baseadas nas condições climáticas
-- 🪟 **Mini-mode** (modo compacto), ativável via `Ctrl + M`
+- 🪟 **Mini-mode** (modo compacto), ativável via `Ctrl + M` 
 
 ## 📁 Estrutura do Projeto
 
